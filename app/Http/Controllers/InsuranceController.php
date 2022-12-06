@@ -50,7 +50,11 @@ class InsuranceController extends Controller
         }
         $data = Insurance::whereHas("vehicle", function ($query) use ($request) {
             $query->whereVehicleNo($request->vehicle_no);
-        })->first();
+        })->first() ?? response()->json([
+            'status' => Response::$statusTexts[Response::HTTP_NOT_FOUND],
+            'message' => trans('responses.inactive_cover', ['number' => $request->vehicle_no]),
+            'data' => []
+        ], Response::HTTP_NOT_FOUND);
         if ($data->status == 'active') {
 
             return response()->json([
@@ -58,7 +62,7 @@ class InsuranceController extends Controller
                 'message' => trans('responses.active_cover', ['number' => $request->vehicle_no]),
                 'data' => []
             ], Response::HTTP_FOUND);
-        } else if ($data->status == 'inactive') {
+        } else {
             $instructions = trans('responses.vehicle_no') . ' : ' . $data->vehicle->vehicle_no . PHP_EOL
                 . trans('responses.chassis_number') . ' : ' . $data->vehicle->chassis . PHP_EOL
                 . trans('responses.vehicle_type') . ' : ' . $data->vehicle->body . PHP_EOL
@@ -68,12 +72,6 @@ class InsuranceController extends Controller
                 'status' => Response::$statusTexts[Response::HTTP_NOT_FOUND],
                 'message' => trans('responses.inactive_cover', ['number' => $request->vehicle_no]),
                 'data' => $instructions
-            ], Response::HTTP_NOT_FOUND);
-        } else {
-            return response()->json([
-                'status' => Response::$statusTexts[Response::HTTP_NOT_FOUND],
-                'message' => trans('responses.inactive_cover', ['number' => $request->vehicle_no]),
-                'data' => []
             ], Response::HTTP_NOT_FOUND);
         }
     }
