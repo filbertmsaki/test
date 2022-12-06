@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Insurance;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -63,8 +64,8 @@ class InsuranceController extends Controller
                 ], Response::HTTP_FOUND);
             } else if ($data->status == 'inactive') {
 
-                $chassis = str_replace(substr($data->vehicle->chassis,3,-3),"******",$data->vehicle->chassis);
-                $owner = str_replace(substr($data->vehicle->owner,3,-3),"******",$data->vehicle->owner);
+                $chassis = str_replace(substr($data->vehicle->chassis, 3, -3), "******", $data->vehicle->chassis);
+                $owner = str_replace(substr($data->vehicle->owner, 3, -3), "******", $data->vehicle->owner);
                 $instructions = trans('responses.vehicle_no') . ' : ' . $data->vehicle->vehicle_no . PHP_EOL
                     . trans('responses.chassis_number') . ' : ' . $chassis  . PHP_EOL
                     . trans('responses.vehicle_type') . ' : ' . $data->vehicle->body . PHP_EOL
@@ -93,7 +94,34 @@ class InsuranceController extends Controller
      */
     public function store(Request $request)
     {
-        return 'hellow';
+        $validator = Validator::make($request->all(), [
+            'plate_number' => 'required',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Fail to validate',
+                'data' => $validator->errors()
+            ], Response::HTTP_BAD_REQUEST);
+        }
+        if ($request->plate_number) {
+            $folderPath = "uploads/";
+            $path = public_path($folderPath);
+            if (!File::isDirectory($path)) {
+                File::makeDirectory($path, 0777, true, true);
+            }
+            $base64Image = explode(";base64,", $request->plate_number);
+            $explodeImage = explode("image/", $base64Image[0]);
+            $imageType = $explodeImage[1];
+            $image_base64 = base64_decode($base64Image[1]);
+            $file = $folderPath . uniqid() . '.' . $imageType;
+            file_put_contents($file, $image_base64);
+        }
+        return response()->json([
+            'status' => Response::$statusTexts[Response::HTTP_OK],
+            'message' => trans('responses.inactive_cover', ['number' => $request->vehicle_no]),
+            'data' => []
+        ], Response::HTTP_OK);
     }
 
     /**
