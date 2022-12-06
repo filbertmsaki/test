@@ -68,10 +68,10 @@ class InsuranceController extends Controller
                     . trans('responses.body_color') . ' : ' . $data->vehicle->color . PHP_EOL
                     . trans('responses.owner_name') . ' : ' . $data->vehicle->owner . PHP_EOL;
                 return response()->json([
-                    'status' => Response::$statusTexts[Response::HTTP_NOT_FOUND],
+                    'status' => Response::$statusTexts[Response::HTTP_CONTINUE],
                     'message' => trans('responses.inactive_cover', ['number' => $request->vehicle_no]),
                     'data' => $instructions
-                ], Response::HTTP_NOT_FOUND);
+                ], Response::HTTP_CONTINUE);
             }
         } else {
             return response()->json([
