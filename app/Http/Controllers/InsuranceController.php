@@ -48,30 +48,37 @@ class InsuranceController extends Controller
                 'data' => $validator->errors()
             ], Response::HTTP_BAD_REQUEST);
         }
-        $data = Insurance::whereHas("vehicle", function ($query) use ($request) {
-            $query->whereVehicleNo($request->vehicle_no);
-        })->first() ?? response()->json([
-            'status' => Response::$statusTexts[Response::HTTP_NOT_FOUND],
-            'message' => trans('responses.inactive_cover', ['number' => $request->vehicle_no]),
-            'data' => []
-        ], Response::HTTP_NOT_FOUND);
-        if ($data->status == 'active') {
+        $data = Insurance::where(function ($query) use ($request) {
+            $query->whereHas("vehicle", function ($query) use ($request) {
+                $query->whereVehicleNo($request->vehicle_no);
+            });
+        })->first();
 
-            return response()->json([
-                'status' => Response::$statusTexts[Response::HTTP_FOUND],
-                'message' => trans('responses.active_cover', ['number' => $request->vehicle_no]),
-                'data' => []
-            ], Response::HTTP_FOUND);
-        } else {
-            $instructions = trans('responses.vehicle_no') . ' : ' . $data->vehicle->vehicle_no . PHP_EOL
-                . trans('responses.chassis_number') . ' : ' . $data->vehicle->chassis . PHP_EOL
-                . trans('responses.vehicle_type') . ' : ' . $data->vehicle->body . PHP_EOL
-                . trans('responses.body_color') . ' : ' . $data->vehicle->color . PHP_EOL
-                . trans('responses.owner_name') . ' : ' . $data->vehicle->owner . PHP_EOL;
+        if ($data) {
+            if ($data->status == 'active') {
+
+                return response()->json([
+                    'status' => Response::$statusTexts[Response::HTTP_FOUND],
+                    'message' => trans('responses.active_cover', ['number' => $request->vehicle_no]),
+                    'data' => []
+                ], Response::HTTP_FOUND);
+            } else if ($data->status == 'inactive') {
+                $instructions = trans('responses.vehicle_no') . ' : ' . $data->vehicle->vehicle_no . PHP_EOL
+                    . trans('responses.chassis_number') . ' : ' . $data->vehicle->chassis . PHP_EOL
+                    . trans('responses.vehicle_type') . ' : ' . $data->vehicle->body . PHP_EOL
+                    . trans('responses.body_color') . ' : ' . $data->vehicle->color . PHP_EOL
+                    . trans('responses.owner_name') . ' : ' . $data->vehicle->owner . PHP_EOL;
+                return response()->json([
+                    'status' => Response::$statusTexts[Response::HTTP_NOT_FOUND],
+                    'message' => trans('responses.inactive_cover', ['number' => $request->vehicle_no]),
+                    'data' => $instructions
+                ], Response::HTTP_NOT_FOUND);
+            }
+        }else{
             return response()->json([
                 'status' => Response::$statusTexts[Response::HTTP_NOT_FOUND],
                 'message' => trans('responses.inactive_cover', ['number' => $request->vehicle_no]),
-                'data' => $instructions
+                'data' => []
             ], Response::HTTP_NOT_FOUND);
         }
     }
