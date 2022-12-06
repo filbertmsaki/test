@@ -119,7 +119,7 @@ class InsuranceController extends Controller
         }
         return response()->json([
             'status' => Response::$statusTexts[Response::HTTP_OK],
-            'message' => trans('responses.inactive_cover', ['number' => $request->vehicle_no]),
+            'message' =>'Image uploaded',
             'data' => []
         ], Response::HTTP_OK);
     }
