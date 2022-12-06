@@ -56,7 +56,6 @@ class InsuranceController extends Controller
 
         if ($data) {
             if ($data->status == 'active') {
-
                 return response()->json([
                     'status' => Response::$statusTexts[Response::HTTP_FOUND],
                     'message' => trans('responses.active_cover', ['number' => $request->vehicle_no]),
@@ -74,12 +73,12 @@ class InsuranceController extends Controller
                     'data' => $instructions
                 ], Response::HTTP_NOT_FOUND);
             }
-        }else{
+        } else {
             return response()->json([
-                'status' => Response::$statusTexts[Response::HTTP_NOT_FOUND],
+                'status' => Response::$statusTexts[Response::HTTP_BAD_REQUEST],
                 'message' => trans('responses.inactive_cover', ['number' => $request->vehicle_no]),
                 'data' => []
-            ], Response::HTTP_NOT_FOUND);
+            ], Response::HTTP_BAD_REQUEST);
         }
     }
 
