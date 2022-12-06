@@ -62,11 +62,14 @@ class InsuranceController extends Controller
                     'data' => []
                 ], Response::HTTP_FOUND);
             } else if ($data->status == 'inactive') {
+
+                $chassis = str_replace(substr($data->vehicle->chassis,3,-3),"******",$data->vehicle->chassis);
+                $owner = str_replace(substr($data->vehicle->owner,3,-3),"******",$data->vehicle->owner);
                 $instructions = trans('responses.vehicle_no') . ' : ' . $data->vehicle->vehicle_no . PHP_EOL
-                    . trans('responses.chassis_number') . ' : ' . $data->vehicle->chassis . PHP_EOL
+                    . trans('responses.chassis_number') . ' : ' . $chassis  . PHP_EOL
                     . trans('responses.vehicle_type') . ' : ' . $data->vehicle->body . PHP_EOL
                     . trans('responses.body_color') . ' : ' . $data->vehicle->color . PHP_EOL
-                    . trans('responses.owner_name') . ' : ' . $data->vehicle->owner . PHP_EOL;
+                    . trans('responses.owner_name') . ' : ' .  $owner . PHP_EOL;
                 return response()->json([
                     'status' => Response::$statusTexts[Response::HTTP_ACCEPTED],
                     'message' => trans('responses.inactive_cover', ['number' => $request->vehicle_no]),
