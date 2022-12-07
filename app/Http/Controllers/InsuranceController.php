@@ -290,7 +290,7 @@ class InsuranceController extends Controller
                         trans('responses.start_date') . ' : ' . $insurance->cover_note_start_date . PHP_EOL .
                         trans('responses.end_date') . ' : ' . $insurance->cover_note_end_date . PHP_EOL;
 
-                    $payment_note = $payment_method . ' will send you a  prompt to enter your ' . $payment_method . ' pin to approve ' . $premiun_including_vat . ' Tsh to be deducted in your account. Enter your PIN to pay.' . PHP_EOL . '2.You will receive an SMS confirmation of your transaction from Jubilee Allianz General Insurance Tanzania.';
+                    $payment_note = '1. '.$payment_method . ' will send you a  prompt to enter your ' . $payment_method . ' pin to approve ' . $premiun_including_vat . ' Tsh to be deducted in your account. Enter your PIN to pay.' . PHP_EOL . '2. You will receive an SMS confirmation of your transaction from Jubilee Allianz General Insurance Tanzania.';
 
                     return response()->json([
                         'status' => Response::$statusTexts[Response::HTTP_CREATED],
