@@ -15,12 +15,26 @@ return new class extends Migration
     {
         Schema::create('vehicles', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('vehicle_no');
-            $table->string('owner');
-            $table->string('chassis');
-            $table->string('usage');
-            $table->string('body');
-            $table->string('color');
+            $table->string('RegistrationNumber');
+            $table->string('BodyType');
+            $table->string('SittingCapacity');
+            $table->string('MotorCategory');
+            $table->string('ChassisNumber');
+            $table->string('Make');
+            $table->string('Model');
+            $table->string('ModelNumber');
+            $table->string('Color');
+            $table->string('EngineNumber');
+            $table->string('EngineCapacity');
+            $table->string('FuelUsed');
+            $table->string('NumberOfAxles');
+            $table->string('AxleDistance');
+            $table->string('YearOfManufacture');
+            $table->string('TareWeight');
+            $table->string('GrossWeight');
+            $table->string('MotorUsage');
+            $table->string('OwnerName');
+            $table->string('OwnerCategory');
             $table->timestamps();
         });
     }

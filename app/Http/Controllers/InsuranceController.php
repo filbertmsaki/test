@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Insurance;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class InsuranceController extends Controller
@@ -17,9 +19,73 @@ class InsuranceController extends Controller
      */
     public function index()
     {
-        //
+        $response = [
+            "headers" => [
+                "ResponseId" => "202212061612578262281",
+                "RequestId" => "TXj7fcsBSB",
+                "ResponseStatusCode" => "TIRA001",
+                "ResponseStatusDesc" => "Successful"
+            ],
+            "data" => [
+                "RegistrationNumber" => "T665CSF",
+                "BodyType" => "Saloon (closed top)",
+                "SittingCapacity" => 5,
+                "MotorCategory" => 1,
+                "ChassisNumber" => "NZE1213144335",
+                "Make" => "Toyota",
+                "Model" => "SPACIO",
+                "ModelNumber" => "TA-NZE121N",
+                "Color" => "White",
+                "EngineNumber" => "1NZ127659",
+                "EngineCapacity" => "1490",
+                "FuelUsed" => "Petrol",
+                "NumberOfAxles" => 2,
+                "AxleDistance" => 0,
+                "YearOfManufacture" => 2002,
+                "TareWeight" => 1180,
+                "GrossWeight" => 1280,
+                "MotorUsage" => "Private or Normal",
+                "OwnerName" => "PHILIP MARSEL SAKAYA",
+                "OwnerCategory" => "Sole Proprietor"
+            ]
+        ];
+        return  $response;
     }
 
+    public function vehicleDetails()
+    {
+        $response = [
+            "headers" => [
+                "ResponseId" => "202212061612578262281",
+                "RequestId" => "TXj7fcsBSB",
+                "ResponseStatusCode" => "TIRA001",
+                "ResponseStatusDesc" => "Successful"
+            ],
+            "data" => [
+                "RegistrationNumber" => "T665CSF",
+                "BodyType" => "Saloon (closed top)",
+                "SittingCapacity" => 5,
+                "MotorCategory" => 1,
+                "ChassisNumber" => "NZE1213144335",
+                "Make" => "Toyota",
+                "Model" => "SPACIO",
+                "ModelNumber" => "TA-NZE121N",
+                "Color" => "White",
+                "EngineNumber" => "1NZ127659",
+                "EngineCapacity" => "1490",
+                "FuelUsed" => "Petrol",
+                "NumberOfAxles" => 2,
+                "AxleDistance" => 0,
+                "YearOfManufacture" => 2002,
+                "TareWeight" => 1180,
+                "GrossWeight" => 1280,
+                "MotorUsage" => "Private or Normal",
+                "OwnerName" => "PHILIP MARSEL SAKAYA",
+                "OwnerCategory" => "Sole Proprietor"
+            ]
+        ];
+        return  $response;
+    }
     /**
      * Show the form for creating a new resource.
      *
@@ -49,11 +115,33 @@ class InsuranceController extends Controller
                 'data' => $validator->errors()
             ], Response::HTTP_BAD_REQUEST);
         }
+
+        $premiun_excluding_vat = 100000;
+        $vat_percentage = 0.18;
+        $vat_amount = $vat_percentage * $premiun_excluding_vat;
+        $premiun_including_vat =  $premiun_excluding_vat + $vat_amount;
+        $product = 'MOTOR PRIVATE';
+        $cover_type = 'THIRD PARTY ONLY';
+        $usage_type = 'PRIVATE';
+        $receipt_date = date('Y-m-d H:i:s');
+        $receipt_no = random_int(10000000000, 99999999999);
+        $receipt_reference_no = Str::random(4) . random_int(10000000000, 99999999999);
+        $receipt_amount = $premiun_including_vat;
+        $bank_code = 'VODACOM';
+        $issue_date = Carbon::now();
+        $cover_note_start_date = Carbon::now();
+        $cover_note_end_date = Carbon::now()->addYear()->subDay(1);
+        $period = trans('responses.one_year');
+        $payment_mode = 'BANK';
+        $currency_code = 'TZS';
+        return $cover_note_end_date;
+
         $data = Insurance::where(function ($query) use ($request) {
             $query->whereHas("vehicle", function ($query) use ($request) {
-                $query->whereVehicleNo($request->vehicle_no);
+                $query->where('RegistrationNumber', $request->vehicle_no);
             });
         })->first();
+
 
         if ($data) {
             if ($data->status == 'active') {
@@ -64,13 +152,19 @@ class InsuranceController extends Controller
                 ], Response::HTTP_FOUND);
             } else if ($data->status == 'inactive') {
 
-                $chassis = str_replace(substr($data->vehicle->chassis, 3, -3), "******", $data->vehicle->chassis);
-                $owner = str_replace(substr($data->vehicle->owner, 3, -3), "******", $data->vehicle->owner);
-                $instructions = trans('responses.vehicle_no') . ' : ' . $data->vehicle->vehicle_no . PHP_EOL
-                    . trans('responses.chassis_number') . ' : ' . $chassis  . PHP_EOL
-                    . trans('responses.vehicle_type') . ' : ' . $data->vehicle->body . PHP_EOL
-                    . trans('responses.body_color') . ' : ' . $data->vehicle->color . PHP_EOL
-                    . trans('responses.owner_name') . ' : ' .  $owner . PHP_EOL;
+                $chassis = str_replace(substr($data->vehicle->ChassisNumber, 3, -3), "******", $data->vehicle->ChassisNumber);
+                $owner = str_replace(substr($data->vehicle->OwnerName, 3, -3), "******", $data->vehicle->OwnerName);
+                $instructions =
+                    trans('responses.registration_number') . ' : ' . $data->vehicle->RegistrationNumber . PHP_EOL .
+                    trans('responses.chassis_number') . ' : ' . $chassis  . PHP_EOL .
+                    trans('responses.body_type') . ' : ' . $data->vehicle->Model . ' ' . $data->vehicle->BodyType . PHP_EOL .
+                    trans('responses.body_color') . ' : ' . $data->vehicle->Color . PHP_EOL .
+                    trans('responses.motor_usage') . ' : ' . $data->vehicle->MotorUsage . PHP_EOL .
+                    trans('responses.owner_name') . ' : ' .  $owner . PHP_EOL . PHP_EOL .
+                    trans('responses.cover_amount') . PHP_EOL .
+                    trans('responses.price') . ' : ' .  $premiun_excluding_vat  . PHP_EOL .
+                    trans('responses.vat') . '( ' . $vat_percentage . ' )' . ' : ' .  $vat_amount . PHP_EOL .
+                    trans('responses.amount') . ' : ' .  $premiun_including_vat  . PHP_EOL;
                 return response()->json([
                     'status' => Response::$statusTexts[Response::HTTP_ACCEPTED],
                     'message' => trans('responses.inactive_cover', ['number' => $request->vehicle_no]),
@@ -119,7 +213,7 @@ class InsuranceController extends Controller
         }
         return response()->json([
             'status' => Response::$statusTexts[Response::HTTP_OK],
-            'message' =>'Image uploaded',
+            'message' => 'Image uploaded',
             'data' => []
         ], Response::HTTP_OK);
     }
