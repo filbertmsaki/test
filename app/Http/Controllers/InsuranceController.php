@@ -190,7 +190,7 @@ class InsuranceController extends Controller
         $validator = Validator::make($request->all(), [
             'vehicle_no' => 'required',
             'phone_number' => 'required|min:9',
-            'paymeny_method'=>'required'
+            'paymeny_method'=>'required|min:3'
         ]);
         if ($validator->fails()) {
             return response()->json([
