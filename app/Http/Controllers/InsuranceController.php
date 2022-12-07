@@ -137,7 +137,7 @@ class InsuranceController extends Controller
         $cover_note_end_date = Carbon::now()->addYear()->subDay(1)->endOfDay();
         $vehicle = Vehicle::where('RegistrationNumber', $request->vehicle_no)->first();
         if ($vehicle) {
-            $valid_insurance = Insurance::whereVehicleId($vehicle->id)->where('cover_note_end_date', '<', $cover_note_start_date)->first();
+            $valid_insurance = Insurance::whereVehicleId($vehicle->id)->where('cover_note_end_date', '>', $cover_note_start_date)->first();
             if ($valid_insurance) {
                 if ($valid_insurance->status == 'active') {
                     return response()->json([
