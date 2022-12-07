@@ -1,8 +1,10 @@
 <?php
 
 return [
+    'new_cover' => 'New cover created for vehicle with registration :number will be active after payment.',
     'active_cover' => 'The vehicle with registration numbers :number already has valid insurance.',
     'inactive_cover' => 'The vehicle with registration numbers :number has no valid insurance.',
+    'not_valid_vehicle' => 'The vehicle with registration numbers :number has no valid registration.',
     'registration_number' => 'Registration Number',
     'body_type' => 'Body Type',
     'vehicle_model' => 'Model',
@@ -19,4 +21,16 @@ return [
     'price' => 'Price',
     'vat' => 'VAT',
     'amount' => 'Amount',
+    'status' => 'Status',
+    'sticker_no' => 'Sticker number',
+    'cover_note_ref' => 'Cover note reference',
+    'insure' => 'Insure',
+    'class_of_insurance' => 'Class of insurance',
+    'transacting_company' => 'Transacting company',
+    'transacting_company_type' => 'Insurance company',
+    'cover_type' => 'Type of cover',
+    'premium_paid' => 'Premium paid',
+    'start_date' => 'Start date',
+    'end_date' => 'End date',
+    'date_issued' => 'Date issued',
 ];

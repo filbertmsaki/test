@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Insurance;
+use App\Models\Vehicle;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -99,6 +102,14 @@ class InsuranceController extends Controller
     {
         return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', trim($string)));
     }
+    public function phone_number_format($code, $digits)
+    {
+
+        $characters = preg_replace('/[^0-9]/', '', trim($digits));
+        $trimedmobile = substr($characters, -9);
+        $phonenumber = $code . $trimedmobile;
+        return $phonenumber;
+    }
 
     public function checkStatus(Request $request)
     {
@@ -120,62 +131,154 @@ class InsuranceController extends Controller
         $vat_percentage = 0.18;
         $vat_amount = $vat_percentage * $premiun_excluding_vat;
         $premiun_including_vat =  $premiun_excluding_vat + $vat_amount;
-        $product = 'MOTOR PRIVATE';
-        $cover_type = 'THIRD PARTY ONLY';
-        $usage_type = 'PRIVATE';
-        $receipt_date = date('Y-m-d H:i:s');
-        $receipt_no = random_int(10000000000, 99999999999);
-        $receipt_reference_no = Str::random(4) . random_int(10000000000, 99999999999);
-        $receipt_amount = $premiun_including_vat;
-        $bank_code = 'VODACOM';
+
         $issue_date = Carbon::now();
         $cover_note_start_date = Carbon::now();
-        $cover_note_end_date = Carbon::now()->addYear()->subDay(1);
-        $period = trans('responses.one_year');
-        $payment_mode = 'BANK';
-        $currency_code = 'TZS';
-        $data = Insurance::where(function ($query) use ($request) {
-            $query->whereHas("vehicle", function ($query) use ($request) {
-                $query->where('RegistrationNumber', $request->vehicle_no);
-            });
-        })->first();
-
-
-        if ($data) {
-            if ($data->status == 'active') {
+        $cover_note_end_date = Carbon::now()->addYear()->subDay(1)->endOfDay();
+        $vehicle = Vehicle::where('RegistrationNumber', $request->vehicle_no)->first();
+        if ($vehicle) {
+            $valid_insurance = Insurance::whereVehicleId($vehicle->id)->where('cover_note_end_date', '<', $cover_note_start_date)->first();
+            if ($valid_insurance) {
+                if ($valid_insurance->status == 'active') {
+                    return response()->json([
+                        'status' => Response::$statusTexts[Response::HTTP_FOUND],
+                        'message' => trans('responses.active_cover', ['number' => $request->vehicle_no]),
+                        'data' => []
+                    ], Response::HTTP_FOUND);
+                } else if ($valid_insurance->status == 'inactive') {
+                    $chassis = str_replace(substr($valid_insurance->vehicle->ChassisNumber, 3, -3), "******", $valid_insurance->vehicle->ChassisNumber);
+                    $owner = str_replace(substr($valid_insurance->vehicle->OwnerName, 3, -3), "******", $valid_insurance->vehicle->OwnerName);
+                    $instructions =
+                        trans('responses.registration_number') . ' : ' . $valid_insurance->vehicle->RegistrationNumber . PHP_EOL .
+                        trans('responses.chassis_number') . ' : ' . $chassis  . PHP_EOL .
+                        trans('responses.body_type') . ' : ' . $valid_insurance->vehicle->Model . ' ' . $valid_insurance->vehicle->BodyType . PHP_EOL .
+                        trans('responses.body_color') . ' : ' . $valid_insurance->vehicle->Color . PHP_EOL .
+                        trans('responses.motor_usage') . ' : ' . $valid_insurance->vehicle->MotorUsage . PHP_EOL .
+                        trans('responses.owner_name') . ' : ' .  $owner . PHP_EOL . PHP_EOL .
+                        trans('responses.cover_amount') . PHP_EOL .
+                        trans('responses.price') . ' : ' .  $premiun_excluding_vat  . PHP_EOL .
+                        trans('responses.vat') . '( ' . $vat_percentage . ' )' . ' : ' .  $vat_amount . PHP_EOL .
+                        trans('responses.amount') . ' : ' .  $premiun_including_vat  . PHP_EOL;
+                    return response()->json([
+                        'status' => Response::$statusTexts[Response::HTTP_ACCEPTED],
+                        'message' => trans('responses.inactive_cover', ['number' => $request->vehicle_no]),
+                        'data' => $instructions
+                    ], Response::HTTP_ACCEPTED);
+                }
+            } else {
                 return response()->json([
                     'status' => Response::$statusTexts[Response::HTTP_FOUND],
                     'message' => trans('responses.active_cover', ['number' => $request->vehicle_no]),
                     'data' => []
                 ], Response::HTTP_FOUND);
-            } else if ($data->status == 'inactive') {
-
-                $chassis = str_replace(substr($data->vehicle->ChassisNumber, 3, -3), "******", $data->vehicle->ChassisNumber);
-                $owner = str_replace(substr($data->vehicle->OwnerName, 3, -3), "******", $data->vehicle->OwnerName);
-                $instructions =
-                    trans('responses.registration_number') . ' : ' . $data->vehicle->RegistrationNumber . PHP_EOL .
-                    trans('responses.chassis_number') . ' : ' . $chassis  . PHP_EOL .
-                    trans('responses.body_type') . ' : ' . $data->vehicle->Model . ' ' . $data->vehicle->BodyType . PHP_EOL .
-                    trans('responses.body_color') . ' : ' . $data->vehicle->Color . PHP_EOL .
-                    trans('responses.motor_usage') . ' : ' . $data->vehicle->MotorUsage . PHP_EOL .
-                    trans('responses.owner_name') . ' : ' .  $owner . PHP_EOL . PHP_EOL .
-                    trans('responses.cover_amount') . PHP_EOL .
-                    trans('responses.price') . ' : ' .  $premiun_excluding_vat  . PHP_EOL .
-                    trans('responses.vat') . '( ' . $vat_percentage . ' )' . ' : ' .  $vat_amount . PHP_EOL .
-                    trans('responses.amount') . ' : ' .  $premiun_including_vat  . PHP_EOL;
-                return response()->json([
-                    'status' => Response::$statusTexts[Response::HTTP_ACCEPTED],
-                    'message' => trans('responses.inactive_cover', ['number' => $request->vehicle_no]),
-                    'data' => $instructions
-                ], Response::HTTP_ACCEPTED);
             }
         } else {
             return response()->json([
-                'status' => Response::$statusTexts[Response::HTTP_BAD_REQUEST],
-                'message' => trans('responses.inactive_cover', ['number' => $request->vehicle_no]),
+                'status' => Response::$statusTexts[Response::HTTP_NOT_FOUND],
+                'message' => trans('responses.not_valid_vehicle', ['number' => $request->vehicle_no]),
                 'data' => []
+            ], Response::HTTP_NOT_FOUND);
+        }
+    }
+
+    public function sendPaymentInfo(Request $request)
+    {
+        $request->merge([
+            'vehicle_no' => $this->clear($request->vehicle_no),
+            'phone_number' => $this->phone_number_format('255', $request->phone_number)
+        ]);
+        $validator = Validator::make($request->all(), [
+            'vehicle_no' => 'required',
+            'phone_number' => 'required|min:9',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Fail to validate',
+                'data' => $validator->errors()
             ], Response::HTTP_BAD_REQUEST);
         }
+        $is_vat_exempt = 'N';
+        $premiun_excluding_vat = 100000;
+        $vat_percentage = 0.18;
+        $vat_amount = $vat_percentage * $premiun_excluding_vat;
+        $premiun_including_vat =  $premiun_excluding_vat + $vat_amount;
+        $product = 'MOTOR PRIVATE';
+        $cover_type = 'THIRD PARTY ONLY';
+        $usage_type = 'PRIVATE';
+        $receipt_date = date('Y-m-d H:i:s');
+        $receipt_no = random_int(10000000000, 99999999999);
+        $receipt_reference_no = strtoupper(Str::random(4) . random_int(10000000000, 99999999999));
+        $receipt_amount = $premiun_including_vat;
+        $bank_code = 'VODACOM';
+        $issue_date = Carbon::now();
+        $cover_note_start_date = Carbon::now();
+        $cover_note_end_date = Carbon::now()->addYear()->subDay(1)->endOfDay();
+        $period = trans('responses.one_year');
+        $payment_mode = 'BANK';
+        $currency_code = 'TZS';
+        $risk_note_number = 'RN' . random_int(1000, 9999);
+        $debit_note_number = 'DN' . random_int(1000, 9999);
+
+        $vehicle = Vehicle::where('RegistrationNumber', $request->vehicle_no)->first() ?? response()->json([
+            'status' => false,
+            'message' => 'Vehicle data not found',
+            'data' => $validator->errors()
+        ], Response::HTTP_BAD_REQUEST);
+
+        $customer = Customer::where('customer_name', $vehicle->OwnerName)->first();
+
+        DB::beginTransaction();
+        $insurance = Insurance::create([
+            'vehicle_id' => $vehicle->id,
+            'customer_id' => $customer->id,
+            'product' => $product,
+            'cover_type' => $cover_type,
+            'usage_type' => $usage_type,
+            'risk_note_number' => $risk_note_number,
+            'debit_note_number' => $debit_note_number,
+            'is_vat_exempt' => $is_vat_exempt,
+            'receipt_date' => $receipt_date,
+            'receipt_no' => $receipt_no,
+            'receipt_reference_no' => $receipt_reference_no,
+            'receipt_amount' => $receipt_amount,
+            'bank_code' => $bank_code,
+            'issue_date' => $issue_date,
+            'cover_note_start_date' => $cover_note_start_date,
+            'cover_note_end_date' => $cover_note_end_date,
+            'payment_mode' => $payment_mode,
+            'sum_issued' => 0,
+            'premiun_excluding_vat' => $premiun_excluding_vat,
+            'vat_percentage' => $vat_percentage,
+            'vat_amount' => $vat_amount,
+            'premiun_including_vat' => $premiun_including_vat,
+        ]);
+        DB::commit();
+        if ($insurance) {
+            $chassis = str_replace(substr($insurance->vehicle->ChassisNumber, 3, -3), "******", $insurance->vehicle->ChassisNumber);
+            $owner = str_replace(substr($insurance->vehicle->OwnerName, 3, -3), "******", $insurance->vehicle->OwnerName);
+            $instructions =
+                trans('responses.status') . ' : ' . 'INACTIVE' . PHP_EOL .
+                trans('responses.sticker_no') . ' : ' . '' . PHP_EOL .
+                trans('responses.cover_note_ref') . ' : ' . '' . PHP_EOL .
+                trans('responses.insure') . ' : ' . 'Jubilee Allianz General Insurance Tanzania' . PHP_EOL .
+                trans('responses.class_of_insurance') . ' : ' . $insurance->product . PHP_EOL .
+                trans('responses.transacting_company') . ' : ' . 'Jubilee Allianz General Insurance Tanzania' . PHP_EOL .
+                trans('responses.transacting_company_type') . ' : ' . 'Insurance Company' . PHP_EOL .
+                trans('responses.registration_number') . ' : ' . $insurance->vehicle->RegistrationNumber . PHP_EOL .
+                trans('responses.chassis_number') . ' : ' . $insurance->vehicle->ChassisNumber  . PHP_EOL .
+                trans('responses.cover_type') . ' : ' . $insurance->cover_type . PHP_EOL .
+                trans('responses.date_issued') . ' : ' . $insurance->issue_date . PHP_EOL .
+                trans('responses.start_date') . ' : ' . $insurance->cover_note_start_date . PHP_EOL .
+                trans('responses.end_date') . ' : ' . $insurance->cover_note_end_date . PHP_EOL;
+
+            return response()->json([
+                'status' => Response::$statusTexts[Response::HTTP_CREATED],
+                'message' => trans('responses.new_cover', ['number' => $request->vehicle_no]),
+                'data' => $instructions
+            ], Response::HTTP_CREATED);
+        }
+        return $insurance;
     }
 
     /**

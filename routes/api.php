@@ -22,6 +22,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::group(['prefix' => 'v1'], function () {
     Route::group(['prefix' => '/insurance', 'as' => 'insurance.'], function () {
         Route::post('/check-status', [InsuranceController::class, 'checkStatus'])->name('check.status');
+        Route::post('/send-payment-info', [InsuranceController::class, 'sendPaymentInfo'])->name('send.payment.info');
     });
     Route::resource('insurance',InsuranceController::class);
 });
