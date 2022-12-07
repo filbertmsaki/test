@@ -136,17 +136,16 @@ class InsuranceController extends Controller
         $cover_note_start_date = Carbon::now();
         $cover_note_end_date = Carbon::now()->addYear()->subDay(1)->endOfDay();
         $vehicle = Vehicle::where('RegistrationNumber', $request->vehicle_no)->first();
-
         if ($vehicle) {
-            $valid_insurance = Insurance::whereVehicleId($vehicle->id)->where('cover_note_end_date', '>', $cover_note_start_date)->first();
+            $valid_insurance = Insurance::whereVehicleId($vehicle->id)->latest()->first();
             if ($valid_insurance) {
-                if ($valid_insurance->status == 'active') {
+                if ($valid_insurance->status == 'active' && $valid_insurance->cover_note_end_date > $cover_note_start_date) {
                     return response()->json([
                         'status' => Response::$statusTexts[Response::HTTP_FOUND],
                         'message' => trans('responses.active_cover', ['number' => $request->vehicle_no]),
                         'data' => []
                     ], Response::HTTP_FOUND);
-                } else if ($valid_insurance->status == 'inactive') {
+                } else if ($valid_insurance->cover_note_end_date < $cover_note_start_date) {
                     $chassis = str_replace(substr($valid_insurance->vehicle->ChassisNumber, 3, -3), "******", $valid_insurance->vehicle->ChassisNumber);
                     $owner = str_replace(substr($valid_insurance->vehicle->OwnerName, 3, -3), "******", $valid_insurance->vehicle->OwnerName);
                     $instructions =
@@ -237,7 +236,7 @@ class InsuranceController extends Controller
             if ($customer) {
                 $last_insurance = Insurance::whereVehicleId($vehicle->id)
                     ->where('cover_note_end_date', '>', $cover_note_start_date)
-                    ->first();
+                    ->latest()->first();
                 if ($last_insurance) {
                     return response()->json([
                         'status' => Response::$statusTexts[Response::HTTP_FOUND],
@@ -291,7 +290,7 @@ class InsuranceController extends Controller
                         trans('responses.start_date') . ' : ' . $insurance->cover_note_start_date . PHP_EOL .
                         trans('responses.end_date') . ' : ' . $insurance->cover_note_end_date . PHP_EOL;
 
-                    $payment_note = '1. '.$payment_method . ' will send you a  prompt to enter your ' . $payment_method . ' pin to approve ' . $premiun_including_vat . ' Tsh to be deducted in your account. Enter your PIN to pay.' . PHP_EOL . '2. You will receive an SMS confirmation of your transaction from Jubilee Allianz General Insurance Tanzania.';
+                    $payment_note = '1. ' . $payment_method . ' will send you a  prompt to enter your ' . $payment_method . ' pin to approve ' . $premiun_including_vat . ' Tsh to be deducted in your account. Enter your PIN to pay.' . PHP_EOL . '2. You will receive an SMS confirmation of your transaction from Jubilee Allianz General Insurance Tanzania.';
 
                     return response()->json([
                         'status' => Response::$statusTexts[Response::HTTP_CREATED],
