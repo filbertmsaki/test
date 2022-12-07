@@ -219,66 +219,67 @@ class InsuranceController extends Controller
         $currency_code = 'TZS';
         $risk_note_number = 'RN' . random_int(1000, 9999);
         $debit_note_number = 'DN' . random_int(1000, 9999);
+        $vehicle = Vehicle::where('RegistrationNumber', $request->vehicle_no)->first();
+        if ($vehicle) {
+            $customer = Customer::where('customer_name', $vehicle->OwnerName)->first();
+            if ($customer) {
+                DB::beginTransaction();
+                $insurance = Insurance::create([
+                    'vehicle_id' => $vehicle->id,
+                    'customer_id' => $customer->id,
+                    'product' => $product,
+                    'cover_type' => $cover_type,
+                    'usage_type' => $usage_type,
+                    'risk_note_number' => $risk_note_number,
+                    'debit_note_number' => $debit_note_number,
+                    'is_vat_exempt' => $is_vat_exempt,
+                    'receipt_date' => $receipt_date,
+                    'receipt_no' => $receipt_no,
+                    'receipt_reference_no' => $receipt_reference_no,
+                    'receipt_amount' => $receipt_amount,
+                    'bank_code' => $bank_code,
+                    'issue_date' => $issue_date,
+                    'cover_note_start_date' => $cover_note_start_date,
+                    'cover_note_end_date' => $cover_note_end_date,
+                    'payment_mode' => $payment_mode,
+                    'sum_issued' => 0,
+                    'premiun_excluding_vat' => $premiun_excluding_vat,
+                    'vat_percentage' => $vat_percentage,
+                    'vat_amount' => $vat_amount,
+                    'premiun_including_vat' => $premiun_including_vat,
+                ]);
+                DB::commit();
+                if ($insurance) {
+                    $chassis = str_replace(substr($insurance->vehicle->ChassisNumber, 3, -3), "******", $insurance->vehicle->ChassisNumber);
+                    $owner = str_replace(substr($insurance->vehicle->OwnerName, 3, -3), "******", $insurance->vehicle->OwnerName);
+                    $instructions =
+                        trans('responses.status') . ' : ' . 'INACTIVE' . PHP_EOL .
+                        trans('responses.sticker_no') . ' : ' . '' . PHP_EOL .
+                        trans('responses.cover_note_ref') . ' : ' . '' . PHP_EOL .
+                        trans('responses.insure') . ' : ' . 'Jubilee Allianz General Insurance Tanzania' . PHP_EOL .
+                        trans('responses.class_of_insurance') . ' : ' . $insurance->product . PHP_EOL .
+                        trans('responses.transacting_company') . ' : ' . 'Jubilee Allianz General Insurance Tanzania' . PHP_EOL .
+                        trans('responses.transacting_company_type') . ' : ' . 'Insurance Company' . PHP_EOL .
+                        trans('responses.registration_number') . ' : ' . $insurance->vehicle->RegistrationNumber . PHP_EOL .
+                        trans('responses.chassis_number') . ' : ' . $insurance->vehicle->ChassisNumber  . PHP_EOL .
+                        trans('responses.cover_type') . ' : ' . $insurance->cover_type . PHP_EOL .
+                        trans('responses.date_issued') . ' : ' . $insurance->issue_date . PHP_EOL .
+                        trans('responses.start_date') . ' : ' . $insurance->cover_note_start_date . PHP_EOL .
+                        trans('responses.end_date') . ' : ' . $insurance->cover_note_end_date . PHP_EOL;
 
-        $vehicle = Vehicle::where('RegistrationNumber', $request->vehicle_no)->first() ?? response()->json([
+                    return response()->json([
+                        'status' => Response::$statusTexts[Response::HTTP_CREATED],
+                        'message' => trans('responses.new_cover', ['number' => $request->vehicle_no]),
+                        'data' => $instructions
+                    ], Response::HTTP_CREATED);
+                }
+            }
+        }
+        return response()->json([
             'status' => false,
-            'message' => 'Vehicle data not found',
+            'message' => 'Data not found',
             'data' => $validator->errors()
         ], Response::HTTP_BAD_REQUEST);
-
-        $customer = Customer::where('customer_name', $vehicle->OwnerName)->first();
-
-        DB::beginTransaction();
-        $insurance = Insurance::create([
-            'vehicle_id' => $vehicle->id,
-            'customer_id' => $customer->id,
-            'product' => $product,
-            'cover_type' => $cover_type,
-            'usage_type' => $usage_type,
-            'risk_note_number' => $risk_note_number,
-            'debit_note_number' => $debit_note_number,
-            'is_vat_exempt' => $is_vat_exempt,
-            'receipt_date' => $receipt_date,
-            'receipt_no' => $receipt_no,
-            'receipt_reference_no' => $receipt_reference_no,
-            'receipt_amount' => $receipt_amount,
-            'bank_code' => $bank_code,
-            'issue_date' => $issue_date,
-            'cover_note_start_date' => $cover_note_start_date,
-            'cover_note_end_date' => $cover_note_end_date,
-            'payment_mode' => $payment_mode,
-            'sum_issued' => 0,
-            'premiun_excluding_vat' => $premiun_excluding_vat,
-            'vat_percentage' => $vat_percentage,
-            'vat_amount' => $vat_amount,
-            'premiun_including_vat' => $premiun_including_vat,
-        ]);
-        DB::commit();
-        if ($insurance) {
-            $chassis = str_replace(substr($insurance->vehicle->ChassisNumber, 3, -3), "******", $insurance->vehicle->ChassisNumber);
-            $owner = str_replace(substr($insurance->vehicle->OwnerName, 3, -3), "******", $insurance->vehicle->OwnerName);
-            $instructions =
-                trans('responses.status') . ' : ' . 'INACTIVE' . PHP_EOL .
-                trans('responses.sticker_no') . ' : ' . '' . PHP_EOL .
-                trans('responses.cover_note_ref') . ' : ' . '' . PHP_EOL .
-                trans('responses.insure') . ' : ' . 'Jubilee Allianz General Insurance Tanzania' . PHP_EOL .
-                trans('responses.class_of_insurance') . ' : ' . $insurance->product . PHP_EOL .
-                trans('responses.transacting_company') . ' : ' . 'Jubilee Allianz General Insurance Tanzania' . PHP_EOL .
-                trans('responses.transacting_company_type') . ' : ' . 'Insurance Company' . PHP_EOL .
-                trans('responses.registration_number') . ' : ' . $insurance->vehicle->RegistrationNumber . PHP_EOL .
-                trans('responses.chassis_number') . ' : ' . $insurance->vehicle->ChassisNumber  . PHP_EOL .
-                trans('responses.cover_type') . ' : ' . $insurance->cover_type . PHP_EOL .
-                trans('responses.date_issued') . ' : ' . $insurance->issue_date . PHP_EOL .
-                trans('responses.start_date') . ' : ' . $insurance->cover_note_start_date . PHP_EOL .
-                trans('responses.end_date') . ' : ' . $insurance->cover_note_end_date . PHP_EOL;
-
-            return response()->json([
-                'status' => Response::$statusTexts[Response::HTTP_CREATED],
-                'message' => trans('responses.new_cover', ['number' => $request->vehicle_no]),
-                'data' => $instructions
-            ], Response::HTTP_CREATED);
-        }
-        return $insurance;
     }
 
     /**
