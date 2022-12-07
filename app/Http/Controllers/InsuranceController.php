@@ -223,6 +223,17 @@ class InsuranceController extends Controller
         if ($vehicle) {
             $customer = Customer::where('customer_name', $vehicle->OwnerName)->first();
             if ($customer) {
+
+                $last_insurance = Insurance::whereVehicleId($vehicle->id)
+                    ->where('cover_note_end_date', '>', $cover_note_start_date)
+                    ->first();
+                if ($last_insurance) {
+                    return response()->json([
+                        'status' => Response::$statusTexts[Response::HTTP_FOUND],
+                        'message' => trans('responses.active_cover', ['number' => $request->vehicle_no]),
+                        'data' => []
+                    ], Response::HTTP_FOUND);
+                }
                 DB::beginTransaction();
                 $insurance = Insurance::create([
                     'vehicle_id' => $vehicle->id,
@@ -247,6 +258,7 @@ class InsuranceController extends Controller
                     'vat_percentage' => $vat_percentage,
                     'vat_amount' => $vat_amount,
                     'premiun_including_vat' => $premiun_including_vat,
+                    'status' => 'active'
                 ]);
                 DB::commit();
                 if ($insurance) {
