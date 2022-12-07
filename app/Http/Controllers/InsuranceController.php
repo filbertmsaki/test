@@ -190,7 +190,7 @@ class InsuranceController extends Controller
         $validator = Validator::make($request->all(), [
             'vehicle_no' => 'required',
             'phone_number' => 'required|min:9',
-            'paymeny_method'=>'required|min:3'
+            'paymeny_method' => 'required|min:3'
         ]);
         if ($validator->fails()) {
             return response()->json([
@@ -200,13 +200,13 @@ class InsuranceController extends Controller
             ], Response::HTTP_BAD_REQUEST);
         }
 
-        if(strtolower($request->paymeny_method)=='vodacom'){
+        if (strtolower($request->paymeny_method) == 'vodacom') {
             $payment_method = strtoupper(strtolower('M-Pesa'));
-        }elseif(strtolower($request->paymeny_method)=='tigo'){
+        } elseif (strtolower($request->paymeny_method) == 'tigo') {
             $payment_method = strtoupper(strtolower('Tigo-pesa'));
-        }elseif(strtolower($request->paymeny_method)=='airtel'){
+        } elseif (strtolower($request->paymeny_method) == 'airtel') {
             $payment_method = strtoupper(strtolower('Airtel moneny'));
-        }else{
+        } else {
             $payment_method = strtoupper(strtolower('bank'));
         }
         $is_vat_exempt = 'N';
@@ -275,6 +275,7 @@ class InsuranceController extends Controller
                     $chassis = str_replace(substr($insurance->vehicle->ChassisNumber, 3, -3), "******", $insurance->vehicle->ChassisNumber);
                     $owner = str_replace(substr($insurance->vehicle->OwnerName, 3, -3), "******", $insurance->vehicle->OwnerName);
                     $cover_note =
+                        trans('responses.cover_details') . PHP_EOL . PHP_EOL .
                         trans('responses.status') . ' : ' . 'INACTIVE' . PHP_EOL .
                         trans('responses.sticker_no') . ' : ' . '' . PHP_EOL .
                         trans('responses.cover_note_ref') . ' : ' . '' . PHP_EOL .
@@ -289,7 +290,7 @@ class InsuranceController extends Controller
                         trans('responses.start_date') . ' : ' . $insurance->cover_note_start_date . PHP_EOL .
                         trans('responses.end_date') . ' : ' . $insurance->cover_note_end_date . PHP_EOL;
 
-                        $payment_note = $payment_method.' will send you a  prompt to enter your '.$payment_method.' pin to approve '.$premiun_including_vat.' Tsh to be deducted in your account. Enter your PIN to pay.'. PHP_EOL.'2.You will receive an SMS confirmation of your transaction from Jubilee Allianz General Insurance Tanzania.';
+                    $payment_note = $payment_method . ' will send you a  prompt to enter your ' . $payment_method . ' pin to approve ' . $premiun_including_vat . ' Tsh to be deducted in your account. Enter your PIN to pay.' . PHP_EOL . '2.You will receive an SMS confirmation of your transaction from Jubilee Allianz General Insurance Tanzania.';
 
                     return response()->json([
                         'status' => Response::$statusTexts[Response::HTTP_CREATED],

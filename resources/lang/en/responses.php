@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'new_cover' => 'New cover created for vehicle with registration :number will be active after payment.',
+    'new_cover' => 'NOTE:This cover created for vehicle with registration :number will be active after payment.',
     'active_cover' => 'The vehicle with registration numbers :number already has valid insurance.',
     'inactive_cover' => 'The vehicle with registration numbers :number has no valid insurance.',
     'not_valid_vehicle' => 'The vehicle with registration numbers :number has no valid registration.',
@@ -33,4 +33,5 @@ return [
     'start_date' => 'Start date',
     'end_date' => 'End date',
     'date_issued' => 'Date issued',
+    'cover_details'=>'INSURANCE COVER NOTE DETAILS',
 ];
