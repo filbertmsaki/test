@@ -190,6 +190,7 @@ class InsuranceController extends Controller
         $validator = Validator::make($request->all(), [
             'vehicle_no' => 'required',
             'phone_number' => 'required|min:9',
+            'paymeny_method'=>'required'
         ]);
         if ($validator->fails()) {
             return response()->json([
@@ -197,6 +198,16 @@ class InsuranceController extends Controller
                 'message' => 'Fail to validate',
                 'data' => $validator->errors()
             ], Response::HTTP_BAD_REQUEST);
+        }
+
+        if(strtolower($request->paymeny_method)=='vodacom'){
+            $payment_method = strtoupper(strtolower('M-Pesa'));
+        }elseif(strtolower($request->paymeny_method)=='tigo'){
+            $payment_method = strtoupper(strtolower('Tigo-pesa'));
+        }elseif(strtolower($request->paymeny_method)=='airtel'){
+            $payment_method = strtoupper(strtolower('Airtel moneny'));
+        }else{
+            $payment_method = strtoupper(strtolower('bank'));
         }
         $is_vat_exempt = 'N';
         $premiun_excluding_vat = 100000;
@@ -210,12 +221,12 @@ class InsuranceController extends Controller
         $receipt_no = random_int(10000000000, 99999999999);
         $receipt_reference_no = strtoupper(Str::random(4) . random_int(10000000000, 99999999999));
         $receipt_amount = $premiun_including_vat;
-        $bank_code = 'VODACOM';
+        $bank_code = $payment_method;
         $issue_date = Carbon::now();
         $cover_note_start_date = Carbon::now();
         $cover_note_end_date = Carbon::now()->addYear()->subDay(1)->endOfDay();
         $period = trans('responses.one_year');
-        $payment_mode = 'BANK';
+        $payment_mode = $payment_method;
         $currency_code = 'TZS';
         $risk_note_number = 'RN' . random_int(1000, 9999);
         $debit_note_number = 'DN' . random_int(1000, 9999);
@@ -223,7 +234,6 @@ class InsuranceController extends Controller
         if ($vehicle) {
             $customer = Customer::where('customer_name', $vehicle->OwnerName)->first();
             if ($customer) {
-
                 $last_insurance = Insurance::whereVehicleId($vehicle->id)
                     ->where('cover_note_end_date', '>', $cover_note_start_date)
                     ->first();
@@ -264,7 +274,7 @@ class InsuranceController extends Controller
                 if ($insurance) {
                     $chassis = str_replace(substr($insurance->vehicle->ChassisNumber, 3, -3), "******", $insurance->vehicle->ChassisNumber);
                     $owner = str_replace(substr($insurance->vehicle->OwnerName, 3, -3), "******", $insurance->vehicle->OwnerName);
-                    $instructions =
+                    $cover_note =
                         trans('responses.status') . ' : ' . 'INACTIVE' . PHP_EOL .
                         trans('responses.sticker_no') . ' : ' . '' . PHP_EOL .
                         trans('responses.cover_note_ref') . ' : ' . '' . PHP_EOL .
@@ -279,10 +289,15 @@ class InsuranceController extends Controller
                         trans('responses.start_date') . ' : ' . $insurance->cover_note_start_date . PHP_EOL .
                         trans('responses.end_date') . ' : ' . $insurance->cover_note_end_date . PHP_EOL;
 
+                        $payment_note = $payment_method.' will send you a  prompt to enter your '.$payment_method.' pin to approve '.$premiun_including_vat.' Tsh to be deducted in your account. Enter your PIN to pay.'. PHP_EOL.'2.You will receive an SMS confirmation of your transaction from Jubilee Allianz General Insurance Tanzania.';
+
                     return response()->json([
                         'status' => Response::$statusTexts[Response::HTTP_CREATED],
                         'message' => trans('responses.new_cover', ['number' => $request->vehicle_no]),
-                        'data' => $instructions
+                        'data' => [
+                            'cover_note' => $cover_note,
+                            'payment_note' => $payment_note
+                        ]
                     ], Response::HTTP_CREATED);
                 }
             }
