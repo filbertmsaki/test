@@ -134,8 +134,6 @@ class InsuranceController extends Controller
         $period = trans('responses.one_year');
         $payment_mode = 'BANK';
         $currency_code = 'TZS';
-        return $cover_note_end_date;
-
         $data = Insurance::where(function ($query) use ($request) {
             $query->whereHas("vehicle", function ($query) use ($request) {
                 $query->where('RegistrationNumber', $request->vehicle_no);
